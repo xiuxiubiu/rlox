@@ -1,6 +1,7 @@
 pub mod command;
 pub mod lox;
 pub mod mode;
+pub mod scanner;
 pub mod token;
 
 use std::{

@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use lazy_static::lazy_static;
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TokenType {
     /// Single-character tokens.
     LeftParen,
@@ -9,7 +14,6 @@ pub enum TokenType {
     Minus,
     Plus,
     Semicolon,
-    Slash,
     Star,
 
     /// One or two character tokens.
@@ -17,10 +21,18 @@ pub enum TokenType {
     BangEqual,
     Equal,
     EqualEqual,
-    Creater,
+    Greater,
     GraterEqual,
     Less,
     LessEqual,
+
+    // comment
+    Slash,
+
+    /// Literals
+    Identifier,
+    String,
+    Number,
 
     /// Keywords.
     And,
@@ -41,4 +53,60 @@ pub enum TokenType {
     While,
 
     Eof,
+}
+
+lazy_static! {
+    pub static ref SINGLE_CHARACTOR_HASHMAP: HashMap<char, TokenType> = {
+        let mut m = HashMap::new();
+        m.insert('(', TokenType::LeftParen);
+        m.insert(')', TokenType::RightParen);
+        m.insert('{', TokenType::RightParen);
+        m.insert('}', TokenType::RightParen);
+        m.insert(',', TokenType::Comma);
+        m.insert('.', TokenType::Dot);
+        m.insert('-', TokenType::Minus);
+        m.insert('+', TokenType::Plus);
+        m.insert(';', TokenType::Semicolon);
+        m.insert('*', TokenType::Star);
+        m
+    };
+    pub static ref ONE_OR_TWO_CHARACTORS_HASHMAP: HashMap<char, TokenType> = {
+        let mut m = HashMap::new();
+        m.insert('!', TokenType::Bang);
+        m.insert('=', TokenType::Equal);
+        m.insert('>', TokenType::Greater);
+        m.insert('<', TokenType::Less);
+        m
+    };
+    pub static ref ONE_CORRESPOND_TWO_CHARACTORS_HASHMAP: HashMap<TokenType, TokenType> = {
+        let mut m = HashMap::new();
+        m.insert(TokenType::Bang, TokenType::BangEqual);
+        m.insert(TokenType::Equal, TokenType::EqualEqual);
+        m.insert(TokenType::Greater, TokenType::GraterEqual);
+        m.insert(TokenType::Less, TokenType::LessEqual);
+        m
+    };
+}
+
+#[derive(Debug, Clone)]
+pub struct Object {}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Token {
+    token_type: TokenType,
+    lexeme: String,
+    literal: Object,
+    line: usize,
+}
+
+impl Token {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Object, line: usize) -> Token {
+        Token {
+            token_type,
+            lexeme,
+            literal,
+            line,
+        }
+    }
 }

@@ -9,3 +9,4 @@ authors = ["xiuxiubiu <xiuxiubiu@gmail.com>"]
 
 [dependencies]
 clap = { version = "4.4.8", features = ["derive"] }
+lazy_static = "1.4.0"
