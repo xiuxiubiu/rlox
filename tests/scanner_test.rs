@@ -41,3 +41,11 @@ fn unterminated_string() {
     let mut scanner = Scanner::new("!= \"你好");
     scanner.scan().unwrap();
 }
+
+#[test]
+fn number() {
+    let mut scanner = Scanner::new("!= 1.23 123 .123 123.");
+    scanner.scan().unwrap();
+    println!("{:?}", scanner.tokens());
+    assert_eq!(scanner.tokens().len(), 8);
+}

@@ -1,3 +1,7 @@
+use lazy_static::lazy_static;
+use std::{collections::HashMap, usize};
+
+use super::{Scan, ScanError};
 use crate::{
     token::{
         Object, Token, TokenType, ONE_CORRESPOND_TWO_CHARACTORS_HASHMAP,
@@ -6,7 +10,17 @@ use crate::{
     Result,
 };
 
-use super::{Scan, ScanError};
+pub struct Nothing;
+
+lazy_static! {
+    pub static ref WHITESPACE_HASHMAP: HashMap<char, Nothing> = {
+        let mut m = HashMap::new();
+        m.insert(' ', Nothing);
+        m.insert('\r', Nothing);
+        m.insert('\t', Nothing);
+        m
+    };
+}
 
 pub struct Scanner {
     chars: Vec<char>,
@@ -27,8 +41,8 @@ impl Scanner {
         }
     }
 
-    fn store(&mut self, token_type: TokenType) -> Result<()> {
-        let lexeme = match self.chars.get(self.start..self.current) {
+    fn explicitly_store(&mut self, token_type: TokenType, start: usize, end: usize) -> Result<()> {
+        let lexeme = match self.chars.get(start..end) {
             Some(chars) => String::from_iter(chars),
             None => {
                 return Err(Box::new(ScanError::new(
@@ -40,6 +54,10 @@ impl Scanner {
         self.tokens
             .push(Token::new(token_type, lexeme, Object {}, self.line));
         Ok(())
+    }
+
+    fn store(&mut self, token_type: TokenType) -> Result<()> {
+        self.explicitly_store(token_type, self.start, self.current)
     }
 
     pub fn tokens(&self) -> Vec<Token> {
@@ -102,17 +120,52 @@ impl Scan for Scanner {
                     }
                     None => break 'advance,
                 },
-                '"' => {
-                    if !self.advance_until(|next_char| next_char == '"') {
+                '"' => match self.advance_until(|next_char| next_char == '"') {
+                    Some(_) => {
+                        self.explicitly_store(TokenType::String, self.start + 1, self.current - 1)?;
+                        continue 'advance;
+                    }
+                    None => {
                         return Err(Box::new(ScanError::new(
                             self.line,
                             "Unterminated string.".to_string(),
-                        )));
+                        )))
                     }
-                    self.store(TokenType::String)?;
+                },
+                // 0-9
+                digit if digit.is_digit(10) => {
+                    // {0-9}+
+                    match self.advance_except(|next_char| !next_char.is_digit(10)) {
+                        // {0-9}+\.
+                        Some(next_char) if next_char == '.' => {
+                            match self.chars.get(self.current + 2) {
+                                // {0-9}+\.{0-9}+
+                                Some(after_dot) if after_dot.is_digit(10) => {
+                                    if self
+                                        .advance_except(|next_char| !next_char.is_digit(10))
+                                        .is_none()
+                                    {
+                                        break 'advance;
+                                    }
+                                }
+                                // {0-9}+
+                                Some(_) => {}
+                                None => break 'advance,
+                            }
+                        }
+                        // {0-9}+
+                        Some(_) => {}
+                        None => break 'advance,
+                    };
+
+                    self.store(TokenType::Number)?;
                     continue 'advance;
                 }
-                ' ' => continue 'advance,
+                whitespace if WHITESPACE_HASHMAP.get(&whitespace).is_some() => continue 'advance,
+                '\n' => {
+                    self.line += 1;
+                    continue 'advance;
+                }
                 other => {
                     return Err(Box::new(ScanError::new(
                         self.line,

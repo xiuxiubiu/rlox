@@ -53,16 +53,29 @@ pub trait Scan {
         }
     }
 
-    fn advance_until<F>(&mut self, f: F) -> bool
+    fn advance_until<F>(&mut self, f: F) -> Option<char>
     where
         F: Fn(char) -> bool,
     {
         while let Some(char) = self.advance() {
             if f(char) {
-                return true;
+                return Some(char);
             }
         }
-        false
+        None
+    }
+
+    fn advance_except<F>(&mut self, f: F) -> Option<char>
+    where
+        F: Fn(char) -> bool,
+    {
+        while let Some(char) = self.peek() {
+            if f(char) {
+                return Some(char);
+            }
+            self.accumulate();
+        }
+        None
     }
 
     fn scan(&mut self) -> Result<()>;
