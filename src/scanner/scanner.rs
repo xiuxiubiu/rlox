@@ -102,6 +102,16 @@ impl Scan for Scanner {
                     }
                     None => break 'advance,
                 },
+                '"' => {
+                    if !self.advance_until(|next_char| next_char == '"') {
+                        return Err(Box::new(ScanError::new(
+                            self.line,
+                            "Unterminated string.".to_string(),
+                        )));
+                    }
+                    self.store(TokenType::String)?;
+                    continue 'advance;
+                }
                 ' ' => continue 'advance,
                 other => {
                     return Err(Box::new(ScanError::new(

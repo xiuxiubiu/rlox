@@ -53,15 +53,16 @@ pub trait Scan {
         }
     }
 
-    fn advance_until<F>(&mut self, f: F)
+    fn advance_until<F>(&mut self, f: F) -> bool
     where
         F: Fn(char) -> bool,
     {
         while let Some(char) = self.advance() {
             if f(char) {
-                break;
+                return true;
             }
         }
+        false
     }
 
     fn scan(&mut self) -> Result<()>;
