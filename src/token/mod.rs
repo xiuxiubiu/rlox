@@ -86,6 +86,26 @@ lazy_static! {
         m.insert(TokenType::Less, TokenType::LessEqual);
         m
     };
+    pub static ref KEYWORDS_HASHMAP: HashMap<&'static str, TokenType> = {
+        let mut keywords = HashMap::new();
+        keywords.insert("and", TokenType::And);
+        keywords.insert("class", TokenType::Class);
+        keywords.insert("else", TokenType::Else);
+        keywords.insert("false", TokenType::False);
+        keywords.insert("for", TokenType::For);
+        keywords.insert("fun", TokenType::Fun);
+        keywords.insert("if", TokenType::If);
+        keywords.insert("nil", TokenType::Nil);
+        keywords.insert("or", TokenType::Or);
+        keywords.insert("print", TokenType::Print);
+        keywords.insert("return", TokenType::Return);
+        keywords.insert("super", TokenType::Super);
+        keywords.insert("this", TokenType::This);
+        keywords.insert("true", TokenType::True);
+        keywords.insert("var", TokenType::Var);
+        keywords.insert("while", TokenType::While);
+        keywords
+    };
 }
 
 #[derive(Debug, Clone)]
@@ -108,5 +128,21 @@ impl Token {
             literal,
             line,
         }
+    }
+
+    pub fn get_token_type(&self) -> TokenType {
+        self.token_type
+    }
+
+    pub fn get_lexeme(&self) -> String {
+        self.lexeme.clone()
+    }
+
+    pub fn get_literal(&self) -> Object {
+        self.literal.clone()
+    }
+
+    pub fn get_line(&self) -> usize {
+        self.line
     }
 }

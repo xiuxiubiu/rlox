@@ -1,3 +1,5 @@
+mod scanner;
+
 use rlox::scanner::{Scan, Scanner};
 
 #[test]

@@ -4,7 +4,7 @@ use std::{collections::HashMap, usize};
 use super::{Scan, ScanError};
 use crate::{
     token::{
-        Object, Token, TokenType, ONE_CORRESPOND_TWO_CHARACTORS_HASHMAP,
+        Object, Token, TokenType, KEYWORDS_HASHMAP, ONE_CORRESPOND_TWO_CHARACTORS_HASHMAP,
         ONE_OR_TWO_CHARACTORS_HASHMAP, SINGLE_CHARACTOR_HASHMAP,
     },
     Result,
@@ -63,6 +63,10 @@ impl Scanner {
     pub fn tokens(&self) -> Vec<Token> {
         self.tokens.clone()
     }
+
+    fn is_alpha(c: char) -> bool {
+        c.is_ascii_alphabetic() || c == '_'
+    }
 }
 
 impl Scan for Scanner {
@@ -74,13 +78,17 @@ impl Scan for Scanner {
         self.chars.get(self.current).copied()
     }
 
-    fn accumulate(&mut self) {
+    fn incr_cursor(&mut self) {
         self.current += 1;
+    }
+
+    fn incr_line(&mut self) {
+        self.line += 1;
     }
 
     fn scan(&mut self) -> Result<()> {
         'advance: while let Some(char) = self.advance() {
-            self.start = self.current;
+            self.start = self.current - 1;
 
             if let Some(token_type) = SINGLE_CHARACTOR_HASHMAP.get(&char) {
                 self.store(token_type.clone())?;
@@ -155,15 +163,41 @@ impl Scan for Scanner {
                         }
                         // {0-9}+
                         Some(_) => {}
-                        None => break 'advance,
+                        None => {}
                     };
 
                     self.store(TokenType::Number)?;
                     continue 'advance;
                 }
-                whitespace if WHITESPACE_HASHMAP.get(&whitespace).is_some() => continue 'advance,
+                _ if Self::is_alpha(char) => {
+                    self.advance_except(|next_char| {
+                        !Self::is_alpha(next_char) && !next_char.is_digit(10)
+                    });
+
+                    let text = match self.chars.get(self.start..self.current) {
+                        Some(text) => text,
+                        None => {
+                            return Err(Box::new(ScanError::new(
+                                self.line,
+                                String::from("out range"),
+                            )))
+                        }
+                    };
+
+                    let token_type = match KEYWORDS_HASHMAP.get(&String::from_iter(text)[..]) {
+                        Some(token_type) => token_type.clone(),
+                        None => TokenType::Identifier,
+                    };
+
+                    self.store(token_type)?;
+
+                    continue 'advance;
+                }
+                _ if WHITESPACE_HASHMAP.get(&char).is_some() => {
+                    continue 'advance;
+                }
                 '\n' => {
-                    self.line += 1;
+                    self.incr_line();
                     continue 'advance;
                 }
                 other => {
@@ -175,6 +209,7 @@ impl Scan for Scanner {
             }
         }
 
+        self.start += 1;
         self.store(TokenType::Eof)?;
 
         Ok(())

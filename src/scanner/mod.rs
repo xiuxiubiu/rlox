@@ -29,12 +29,14 @@ pub trait Scan {
 
     fn peek(&self) -> Option<char>;
 
-    fn accumulate(&mut self);
+    fn incr_cursor(&mut self);
+
+    fn incr_line(&mut self);
 
     fn advance(&mut self) -> Option<char> {
         let char = self.peek();
         if char.is_some() {
-            self.accumulate();
+            self.incr_cursor();
         }
         char
     }
@@ -45,7 +47,7 @@ pub trait Scan {
     {
         match self.peek() {
             Some(next_char) if f(next_char) => {
-                self.accumulate();
+                self.incr_cursor();
                 Some(true)
             }
             Some(_) => Some(false),
@@ -73,7 +75,7 @@ pub trait Scan {
             if f(char) {
                 return Some(char);
             }
-            self.accumulate();
+            self.incr_cursor();
         }
         None
     }
